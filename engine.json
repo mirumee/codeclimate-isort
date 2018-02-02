@@ -1,0 +1,11 @@
+{
+    "name": "isort",
+    "description": "Verifies that Python imports are sorted correctly.",
+    "maintainer": {
+      "name": "Mirumee Software",
+      "email": "hello@mirumee.com"
+    },
+    "languages" : ["Python"],
+    "version": "1.0.0",
+    "spec_version": "0.0.1"
+}
