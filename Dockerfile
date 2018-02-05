@@ -1,16 +1,19 @@
-FROM python:3
+FROM python:3-slim
 
-LABEL maintainer="Mirumee Software <hello@mirumee.com>"
+LABEL maintainer "Mirumee Software <hello@mirumee.com>"
+
+ADD engine.json /
 
 WORKDIR /usr/src/app
 
-ADD engine.json .
+RUN useradd -u 9000 -M -d /usr/src/app app
+RUN chown -R app:app /usr/src/app
+
 ADD checker.py .
 
 RUN pip install --no-cache-dir isort
 
-RUN useradd -u 9000 -M -d /usr/src/app app
-RUN chown -R app:app /usr/src/app
+USER app
 
 VOLUME /code
 WORKDIR /code
