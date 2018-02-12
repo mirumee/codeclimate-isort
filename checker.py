@@ -40,6 +40,8 @@ def analyze_file(path):
         pass
     else:
         if result.incorrectly_sorted:
+            line_no = (
+                result.import_index + 1 if result.import_index >= 0 else 1)
             yield {
                 'type': 'issue',
                 'check_name': 'Incorrectly Sorted Imports',
@@ -48,8 +50,8 @@ def analyze_file(path):
                 'location': {
                     'path': os.path.relpath(path, start='/code'),
                     'lines': {
-                        'begin': 1,
-                        'end': 1}},
+                        'begin': line_no,
+                        'end': line_no}},
                 'remediation_points': 50000,
                 'severity': 'minor'}
 
