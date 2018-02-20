@@ -56,9 +56,21 @@ def analyze_file(path):
                 'severity': 'minor'}
 
 
+def get_files_in_path(path):
+    if os.path.isdir(path):
+        for dirpath, _dirnames, filenames in os.walk(path, topdown=True):
+            for filename in filenames:
+                filepath = os.path.join(dirpath, filename)
+                if is_python_file(filepath):
+                    yield filepath
+    else:
+        yield path
+
+
 def analyze(path):
-    if is_python_file(path):
-        yield from analyze_file(path)
+    for file_name in get_files_in_path(path):
+        if is_python_file(file_name):
+            yield from analyze_file(file_name)
 
 
 if __name__ == '__main__':
