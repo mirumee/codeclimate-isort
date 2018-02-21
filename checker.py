@@ -3,11 +3,12 @@ import os
 import re
 import sys
 from contextlib import contextmanager
+from difflib import unified_diff
 from io import StringIO
 
 from isort import SortImports
 
-shebang_re = re.compile(br'^#!.*\bpython[23w]?\b')
+SHEBANG_RE = re.compile(br'^#!.*\bpython[23w]?\b')
 
 
 @contextmanager
@@ -24,12 +25,12 @@ def is_python_file(path):
     if path.endswith('.py'):
         return True
     try:
-        with open(path, 'rb') as fp:
-            line = fp.readline(100)
+        with open(path, 'rb') as suspect:
+            line = suspect.readline(100)
     except IOError:
         return False
     else:
-        return bool(shebang_re.match(line))
+        return bool(SHEBANG_RE.match(line))
 
 
 def analyze_file(path):
@@ -40,15 +41,27 @@ def analyze_file(path):
         pass
     else:
         if result.incorrectly_sorted:
+            file_path = os.path.relpath(path, start='/code')
             line_no = (
                 result.import_index + 1 if result.import_index >= 0 else 1)
+            file_contents = '\n'.join(result.in_lines)
+            diff = unified_diff(
+                file_contents.splitlines(True),
+                result.output.splitlines(True),
+                fromfile=file_path,
+                tofile=file_path)
+            content = {
+                'body':
+                    'Suggested change:\n\n```diff\n%s\n```' % (
+                        ''.join(diff), )}
             yield {
                 'type': 'issue',
                 'check_name': 'Incorrectly Sorted Imports',
                 'description': 'Imports are incorrectly sorted',
+                'content': content,
                 'categories': ['Style'],
                 'location': {
-                    'path': os.path.relpath(path, start='/code'),
+                    'path': file_path,
                     'lines': {
                         'begin': line_no,
                         'end': line_no}},
@@ -60,9 +73,9 @@ def get_files_in_path(path):
     if os.path.isdir(path):
         for dirpath, _dirnames, filenames in os.walk(path, topdown=True):
             for filename in filenames:
-                filepath = os.path.join(dirpath, filename)
-                if is_python_file(filepath):
-                    yield filepath
+                file_path = os.path.join(dirpath, filename)
+                if is_python_file(file_path):
+                    yield file_path
     else:
         yield path
 
@@ -73,10 +86,14 @@ def analyze(path):
             yield from analyze_file(file_name)
 
 
-if __name__ == '__main__':
+def check():
     with open('/config.json') as config_file:
         config = json.load(config_file)
     for path in config['include_paths']:
         results = analyze(os.path.join('/code', path))
         for problem in results:
             print(json.dumps(problem), end='\0', flush=True)
+
+
+if __name__ == '__main__':
+    check()
